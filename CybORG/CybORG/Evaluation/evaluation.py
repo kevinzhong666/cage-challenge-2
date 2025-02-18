@@ -1,3 +1,11 @@
+import os
+import sys
+
+# Add the root of the CybORG package to the Python path
+package_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+if package_root not in sys.path:
+    sys.path.insert(0, package_root)
+
 import subprocess
 import inspect
 import time
@@ -5,22 +13,20 @@ from statistics import mean, stdev
 
 from CybORG import CybORG, CYBORG_VERSION
 from CybORG.Agents import B_lineAgent, SleepAgent
-from CybORG.Agents.SimpleAgents.BaseAgent import BaseAgent
-from CybORG.Agents.SimpleAgents.BlueLoadAgent import BlueLoadAgent
-from CybORG.Agents.SimpleAgents.BlueReactAgent import BlueReactRemoveAgent
 from CybORG.Agents.SimpleAgents.Meander import RedMeanderAgent
-from CybORG.Agents.Wrappers.EnumActionWrapper import EnumActionWrapper
-from CybORG.Agents.Wrappers.FixedFlatWrapper import FixedFlatWrapper
-from CybORG.Agents.Wrappers.OpenAIGymWrapper import OpenAIGymWrapper
-from CybORG.Agents.Wrappers.ReduceActionSpaceWrapper import ReduceActionSpaceWrapper
-from CybORG.Agents.Wrappers import ChallengeWrapper
+from CybORG.Agents.Wrappers.ChallengeWrapper2 import ChallengeWrapper2
+from CybORG.Agents.SimpleAgents.MainAgent import MainAgent
+import random
+from CybORG.PPO.ActorCritic import ActorCritic
+from CybORG.PPO.Memory import Memory
 
-MAX_EPS = 100
+MAX_EPS = 1000
 agent_name = 'Blue'
+random.seed(0)
 
-
+# changed to ChallengeWrapper2
 def wrap(env):
-    return ChallengeWrapper(env=env, agent_name='Blue')
+    return ChallengeWrapper2(env=env, agent_name='Blue')
 
 def get_git_revision_hash() -> str:
     return subprocess.check_output(['git', 'rev-parse', 'HEAD']).decode('ascii').strip()
@@ -28,19 +34,20 @@ def get_git_revision_hash() -> str:
 if __name__ == "__main__":
     cyborg_version = CYBORG_VERSION
     scenario = 'Scenario2'
-    commit_hash = get_git_revision_hash()
+    # commit_hash = get_git_revision_hash()
+    commit_hash = "Not using git"
     # ask for a name
-    name = input('Name: ')
+    name = "Nemo"
     # ask for a team
-    team = input("Team: ")
+    team = "Group 11"
     # ask for a name for the agent
-    name_of_agent = input("Name of technique: ")
+    name_of_agent = "PPO + Greedy decoys"
 
     lines = inspect.getsource(wrap)
     wrap_line = lines.split('\n')[1].split('return ')[1]
 
     # Change this line to load your agent
-    agent = BlueLoadAgent()
+    agent = MainAgent()
 
     print(f'Using agent {agent.__class__.__name__}, if this is incorrect please update the code to load in your agent')
 
@@ -79,6 +86,7 @@ if __name__ == "__main__":
                     r.append(rew)
                     # r.append(result.reward)
                     a.append((str(cyborg.get_last_action('Blue')), str(cyborg.get_last_action('Red'))))
+
                 agent.end_episode()
                 total_reward.append(sum(r))
                 actions.append(a)
@@ -89,3 +97,9 @@ if __name__ == "__main__":
                 data.write(f'steps: {num_steps}, adversary: {red_agent.__name__}, mean: {mean(total_reward)}, standard deviation {stdev(total_reward)}\n')
                 for act, sum_rew in zip(actions, total_reward):
                     data.write(f'actions: {act}, total reward: {sum_rew}\n')
+
+# __file__ gives the path to the current file.
+# os.path.dirname(__file__) gives the directory containing this file.
+# Joining with ".." twice moves up two levels.
+parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+print(parent_dir)
